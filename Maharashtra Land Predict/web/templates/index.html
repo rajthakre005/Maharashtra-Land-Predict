@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maharashtra Future Land Predictions | AI-Powered Analytics</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-main: #0a0b10;
+            --bg-card: rgba(255, 255, 255, 0.03);
+            --bg-card-hover: rgba(255, 255, 255, 0.06);
+            --primary: #38ef7d;
+            --primary-glow: rgba(56, 239, 125, 0.3);
+            --secondary: #11998e;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --urban: #ff4d4d;
+            --forest: #00fa9a;
+            --agri: #ffb347;
+            --water: #00d2ff;
+            --border: rgba(255, 255, 255, 0.08);
+            --glass: blur(12px);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-main);
+            background-image:
+                radial-gradient(circle at 0% 0%, rgba(17, 153, 142, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 100% 100%, rgba(56, 239, 125, 0.1) 0%, transparent 40%);
+            color: var(--text-main);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Glass Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+
+        /* Header */
+        .header {
+            padding: 3rem 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header h1 {
+            font-size: 2.8rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(to right, #fff, #38ef7d);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: var(--text-dim);
+            font-size: 1.1rem;
+            font-weight: 400;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1540px;
+            margin: 0 auto;
+            padding: 0 2rem 4rem;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            backdrop-filter: var(--glass);
+            border-radius: 24px;
+            padding: 2rem;
+            position: relative;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-8px);
+            background: var(--bg-card-hover);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 4px; height: 100%;
+        }
+
+        .stat-card.urban::after { background: var(--urban); }
+        .stat-card.forest::after { background: var(--forest); }
+        .stat-card.agri::after { background: var(--agri); }
+        .stat-card.population::after { background: var(--water); }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 0.2rem;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        /* Main Layout */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 1280px) {
+            .main-grid { grid-template-columns: 1fr; }
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: sticky;
+            top: 2rem;
+            height: fit-content;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            backdrop-filter: var(--glass);
+            border-radius: 28px;
+            padding: 2rem;
+        }
+
+        .sidebar h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .district-select {
+            width: 100%;
+            padding: 1.1rem;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.4);
+            color: #fff;
+            font-size: 1rem;
+            font-family: inherit;
+            margin-bottom: 2rem;
+            appearance: none;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .district-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px var(--primary-glow);
+        }
+
+        .district-info-box {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 20px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border);
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+        }
+
+        .info-item .label { color: var(--text-dim); }
+        .info-item .val { font-weight: 600; }
+
+        /* Controls */
+        .control-group {
+            margin-bottom: 2rem;
+        }
+
+        .control-group label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .slider {
+            width: 100%;
+            -webkit-appearance: none;
+            height: 6px;
+            border-radius: 10px;
+            background: var(--border);
+            outline: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--primary);
+            box-shadow: 0 0 15px var(--primary-glow);
+            cursor: pointer;
+            border: 4px solid var(--bg-main);
+            transition: all 0.3s;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 1.1rem;
+            border: none;
+            border-radius: 16px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            color: #000;
+            box-shadow: 0 10px 20px rgba(56, 239, 125, 0.2);
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.03);
+            box-shadow: 0 15px 30px rgba(56, 239, 125, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--border);
+            color: #fff;
+        }
+
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.15); }
+
+        /* Content Area */
+        .content-area {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        /* Map Section */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 32px;
+            padding: 2rem;
+            backdrop-filter: var(--glass);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .metric-tabs {
+            display: flex;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 6px;
+            border-radius: 16px;
+            gap: 4px;
+        }
+
+        .metric-tab {
+            padding: 0.6rem 1.2rem;
+            border-radius: 12px;
+            border: none;
+            background: transparent;
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .metric-tab.active {
+            background: var(--border);
+            color: #fff;
+        }
+
+        #map {
+            height: 500px;
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            filter: grayscale(0.2) invert(1) hue-rotate(180deg) brightness(0.8);
+        }
+
+        /* Charts Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .charts-grid { grid-template-columns: 1fr; }
+        }
+
+        .chart-container {
+            min-height: 400px;
+        }
+
+        /* Insights */
+        .insights-panel {
+            background: linear-gradient(135deg, rgba(17, 153, 142, 0.1), rgba(56, 239, 125, 0.05));
+            border-radius: 32px;
+            padding: 2.5rem;
+            border: 1px solid var(--border);
+        }
+
+        .insight-item {
+            display: flex;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 24px;
+            margin-bottom: 1rem;
+            border: 1px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .insight-item:hover {
+            border-color: var(--border);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .insight-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 16px;
+            background: var(--bg-card);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+            border: 1px solid var(--border);
+        }
+
+        .insight-text {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* Leaflet Overrides */
+        .leaflet-container { background: var(--bg-main); }
+        .leaflet-popup-content-wrapper {
+            background: var(--bg-main);
+            color: #fff;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+        .leaflet-popup-tip { background: var(--bg-main); }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Maharashtra Future Land Predictions</h1>
+        <p>Advanced AI Platform for Geospatial Analytics & Future Trend Forecasting</p>
+    </div>
+
+    <div class="container">
+        <!-- Stats Grid -->
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card urban">
+                <span class="stat-value" id="avgUrban">--</span>
+                <span class="stat-label">Urban Density</span>
+            </div>
+            <div class="stat-card forest">
+                <span class="stat-value" id="avgForest">--</span>
+                <span class="stat-label">Forest Cover</span>
+            </div>
+            <div class="stat-card agri">
+                <span class="stat-value" id="avgAgri">--</span>
+                <span class="stat-label">Agri Land</span>
+            </div>
+            <div class="stat-card population">
+                <span class="stat-value" id="totalPop">--</span>
+                <span class="stat-label">Total Population</span>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <h3><i class="fas fa-map-marker-alt" style="color: var(--primary)"></i> Region Selector</h3>
+                <select class="district-select" id="districtSelect">
+                    <option value="">Choose a District</option>
+                </select>
+
+                <div id="districtInfo" style="display: none;">
+                    <div class="district-info-box">
+                        <h4 id="selectedDistrictName" style="font-size: 1.4rem; font-weight: 800; margin-bottom: 1.5rem; color: var(--primary)"></h4>
+                        <div class="info-item">
+                            <span class="label">Coordinates</span>
+                            <span class="val" id="distCoords"></span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Population</span>
+                            <span class="val" id="distPop"></span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Zone Category</span>
+                            <span class="val" id="distType"></span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Urban %</span>
+                            <span class="val" id="distUrban"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="prediction-controls">
+                    <h3><i class="fas fa-magic" style="color: var(--primary)"></i> Parameters</h3>
+                    <div class="control-group">
+                        <label>
+                            <span>Forecast Horizon</span>
+                            <span id="yearsValue" style="color: var(--primary)">5 Years</span>
+                        </label>
+                        <input type="range" class="slider" id="yearsSlider" min="1" max="20" value="5">
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="runPredictions()">
+                    <i class="fas fa-bolt"></i> Compute Forecast
+                </button>
+                <button class="btn btn-secondary" onclick="resetView()">
+                    <i class="fas fa-undo"></i> Reset Analytics
+                </button>
+            </div>
+
+            <!-- Content Area -->
+            <div class="content-area">
+                <!-- Map -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-globe-asia" style="color: var(--primary)"></i>
+                            Geospatial Heatmap
+                        </div>
+                        <div class="metric-tabs">
+                            <button class="metric-tab active" onclick="setMapMetric('urban_pct')">Urban</button>
+                            <button class="metric-tab" onclick="setMapMetric('forest_pct')">Forest</button>
+                            <button class="metric-tab" onclick="setMapMetric('agricultural_pct')">Agri</button>
+                            <button class="metric-tab" onclick="setMapMetric('land_price_rs_per_sqft')">Price</button>
+                            <button class="metric-tab" onclick="setMapMetric('population')">People</button>
+                        </div>
+                    </div>
+                    <div id="map"></div>
+                </div>
+
+                <!-- Charts -->
+                <div class="charts-grid">
+                    <div class="card">
+                        <div class="card-title"><i class="fas fa-chart-area" style="color: var(--urban)"></i> Land Composition Trend</div>
+                        <div id="landUseChart" class="chart-container"></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title"><i class="fas fa-chart-line" style="color: #9b59b6"></i> Price Valuation Forecast</div>
+                        <div id="priceChart" class="chart-container"></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title"><i class="fas fa-city" style="color: var(--primary)"></i> Urban Expansion Sprawl</div>
+                        <div id="urbanSprawlChart" class="chart-container"></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title"><i class="fas fa-seedling" style="color: var(--forest)"></i> Environmental Sustainability</div>
+                        <div id="agriChart" class="chart-container"></div>
+                    </div>
+                </div>
+
+                <!-- Insights -->
+                <div class="insights-panel">
+                    <div class="card-title" style="margin-bottom: 2rem;">
+                        <i class="fas fa-lightbulb" style="color: #f1c40f"></i>
+                        Strategic AI Insights
+                    </div>
+                    <div id="insightsContent">
+                        <div class="insight-item">
+                            <div class="insight-icon"><i class="fas fa-robot"></i></div>
+                            <div class="insight-text">
+                                <strong>System Ready</strong>
+                                <span style="color: var(--text-dim); font-size: 0.9rem;">Select a specific district to initialize deep learning analysis and trend synthesis.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let map;
+        let currentDistrict = null;
+        let currentMapMetric = 'urban_pct';
+        let districtsData = [];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initMap();
+            loadDistricts();
+            loadStatewideStats();
+            
+            // Years slider
+            document.getElementById('yearsSlider').addEventListener('input', function() {
+                document.getElementById('yearsValue').textContent = this.value;
+            });
+            
+            // District select
+            document.getElementById('districtSelect').addEventListener('change', function() {
+                selectDistrict(this.value);
+            });
+        });
+
+        // Initialize Leaflet map
+        function initMap() {
+            map = L.map('map').setView([19.0, 75.0], 6);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 18
+            }).addTo(map);
+        }
+
+        // Load districts
+        async function loadDistricts() {
+            try {
+                const response = await fetch('/api/districts');
+                districtsData = await response.json();
+                
+                const select = document.getElementById('districtSelect');
+                districtsData.forEach(d => {
+                    const option = document.createElement('option');
+                    option.value = d.name;
+                    option.textContent = d.name;
+                    select.appendChild(option);
+                });
+                
+                // Add markers to map
+                updateMapMarkers();
+            } catch (error) {
+                console.error('Error loading districts:', error);
+            }
+        }
+
+        // Load statewide statistics
+        async function loadStatewideStats() {
+            try {
+                const response = await fetch('/api/analyze/statewide');
+                const stats = await response.json();
+                
+                document.getElementById('avgUrban').textContent = stats.average_urban_pct.toFixed(1) + '%';
+                document.getElementById('avgForest').textContent = stats.average_forest_pct.toFixed(1) + '%';
+                document.getElementById('avgAgri').textContent = stats.average_agricultural_pct.toFixed(1) + '%';
+                document.getElementById('totalPop').textContent = (stats.total_population / 1000000).toFixed(1) + 'M';
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        // Update map markers
+        async function updateMapMarkers() {
+            try {
+                const response = await fetch(`/api/data/heatmap/${currentMapMetric}`);
+                const data = await response.json();
+                
+                // Clear existing markers
+                map.eachLayer(layer => {
+                    if (layer instanceof L.CircleMarker) {
+                        map.removeLayer(layer);
+                    }
+                });
+                
+                // Get color scale based on metric
+                const values = data.data.map(d => d.value);
+                const max = Math.max(...values);
+                const min = Math.min(...values);
+                
+                data.data.forEach(d => {
+                    const normalized = (d.value - min) / (max - min || 1);
+                    const color = getColorForValue(normalized, currentMapMetric);
+                    
+                    const marker = L.circleMarker([d.lat, d.lon], {
+                        radius: 10 + normalized * 15,
+                        fillColor: color,
+                        color: '#fff',
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: 0.8
+                    }).addTo(map);
+                    
+                    marker.bindPopup(`
+                        <strong>${d.district}</strong><br>
+                        ${getMetricLabel(currentMapMetric)}: ${d.value.toFixed(2)}
+                    `);
+                    
+                    marker.on('click', () => {
+                        document.getElementById('districtSelect').value = d.district;
+                        selectDistrict(d.district);
+                    });
+                });
+            } catch (error) {
+                console.error('Error updating map:', error);
+            }
+        }
+
+        // Get color based on value and metric
+        function getColorForValue(normalized, metric) {
+            if (metric === 'urban_pct') return `hsl(${120 - normalized * 120}, 70%, 50%)`; // Green to Red
+            if (metric === 'forest_pct') return `hsl(${normalized * 120}, 70%, 40%)`; // Red to Green
+            if (metric === 'agricultural_pct') return `hsl(${30 + normalized * 30}, 80%, 50%)`; // Orange shades
+            if (metric === 'land_price_rs_per_sqft') return `hsl(${240 + normalized * 60}, 70%, 50%)`; // Blue shades
+            return `hsl(${200 + normalized * 60}, 70%, 50%)`;
+        }
+
+        function getMetricLabel(metric) {
+            const labels = {
+                'urban_pct': 'Urban %',
+                'forest_pct': 'Forest %',
+                'agricultural_pct': 'Agricultural %',
+                'land_price_rs_per_sqft': 'Land Price (₹/sqft)',
+                'population': 'Population'
+            };
+            return labels[metric] || metric;
+        }
+
+        // Set map metric
+        function setMapMetric(metric) {
+            currentMapMetric = metric;
+            
+            // Update active tab
+            document.querySelectorAll('.metric-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            updateMapMarkers();
+        }
+
+        // Select district
+        function selectDistrict(districtName) {
+            if (!districtName) {
+                document.getElementById('districtInfo').style.display = 'none';
+                return;
+            }
+            
+            currentDistrict = districtName;
+            const district = districtsData.find(d => d.name === districtName);
+            
+            if (district) {
+                document.getElementById('selectedDistrictName').textContent = district.name;
+                document.getElementById('distCoords').textContent = `${district.lat.toFixed(4)}, ${district.lon.toFixed(4)}`;
+                document.getElementById('distPop').textContent = (district.population / 1000).toFixed(0) + 'K';
+                document.getElementById('distType').textContent = district.land_type;
+                document.getElementById('distUrban').textContent = district.urban_pct;
+
+                document.getElementById('districtInfo').style.display = 'block';
+                
+                // Pan map to district
+                map.setView([district.lat, district.lon], 10);
+                
+                // Load initial charts
+                runPredictions();
+            }
+        }
+
+        // Run predictions
+        async function runPredictions() {
+            if (!currentDistrict) {
+                alert('Please select a district first');
+                return;
+            }
+            
+            const years = document.getElementById('yearsSlider').value;
+            
+            // Show loading
+            document.getElementById('landUseChart').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+            
+            try {
+                // Fetch all predictions in parallel
+                const [landUseRes, priceRes, urbanRes, agriRes] = await Promise.all([
+                    fetch(`/api/predict/land-use/${currentDistrict}?years=${years}`),
+                    fetch(`/api/predict/land-price/${currentDistrict}?years=${years}`),
+                    fetch(`/api/predict/urban-sprawl/${currentDistrict}?years=${years}`),
+                    fetch(`/api/predict/agricultural-degradation/${currentDistrict}?years=${years}`)
+                ]);
+                
+                const landUseData = await landUseRes.json();
+                const priceData = await priceRes.json();
+                const urbanData = await urbanRes.json();
+                const agriData = await agriRes.json();
+                
+                // Render charts
+                renderLandUseChart(landUseData);
+                renderPriceChart(priceData);
+                renderUrbanSprawlChart(urbanData);
+                renderAgriChart(agriData);
+
+                // Update insights
+                updateInsights(landUseData, priceData, urbanData, agriData);
+
+            } catch (error) {
+                console.error('Error running predictions:', error);
+            }
+        }
+
+        // Render land use chart
+        function renderLandUseChart(data) {
+            const predictions = data.predictions;
+            const years = predictions.map(p => p.year);
+            
+            const traces = [
+                {
+                    x: years,
+                    y: predictions.map(p => p.urban_pct),
+                    name: 'Urban',
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    fill: 'tonexty',
+                    line: { color: '#e74c3c', width: 3 }
+                },
+                {
+                    x: years,
+                    y: predictions.map(p => p.agricultural_pct),
+                    name: 'Agricultural',
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    fill: 'tonexty',
+                    line: { color: '#f39c12', width: 3 }
+                },
+                {
+                    x: years,
+                    y: predictions.map(p => p.forest_pct),
+                    name: 'Forest',
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    fill: 'tonexty',
+                    line: { color: '#27ae60', width: 3 }
+                },
+                {
+                    x: years,
+                    y: predictions.map(p => p.other_pct),
+                    name: 'Other Land',
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    fill: 'tonexty',
+                    line: { color: '#95a5a6', width: 3 }
+                }
+            ];
+            
+            const layout = {
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { color: '#fff' },
+                xaxis: { title: 'Year', gridcolor: 'rgba(255,255,255,0.1)' },
+                yaxis: { title: 'Percentage (%)', gridcolor: 'rgba(255,255,255,0.1)' },
+                showlegend: true,
+                legend: { x: 0, y: 1.1, orientation: 'h' }
+            };
+            
+            Plotly.newPlot('landUseChart', traces, layout, {responsive: true});
+        }
+
+        // Render price chart
+        function renderPriceChart(data) {
+            const predictions = data.predictions;
+            
+            const trace = {
+                x: predictions.map(p => p.year),
+                y: predictions.map(p => p.predicted_price_rs_per_sqft),
+                type: 'scatter',
+                mode: 'lines+markers',
+                line: { color: '#9b59b6', width: 3 },
+                marker: { size: 8 }
+            };
+            
+            const layout = {
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { color: '#fff' },
+                xaxis: { title: 'Year', gridcolor: 'rgba(255,255,255,0.1)' },
+                yaxis: { title: 'Price (₹/sqft)', gridcolor: 'rgba(255,255,255,0.1)' }
+            };
+            
+            Plotly.newPlot('priceChart', [trace], layout, {responsive: true});
+        }
+
+        // Render urban sprawl chart
+        function renderUrbanSprawlChart(data) {
+            const predictions = data.predictions;
+            
+            const trace = {
+                x: predictions.map(p => p.year),
+                y: predictions.map(p => p.urban_pct),
+                type: 'bar',
+                marker: {
+                    color: predictions.map((p, i) => `hsl(${0 + i * 10}, 70%, 50%)`)
+                }
+            };
+            
+            const layout = {
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { color: '#fff' },
+                xaxis: { title: 'Year', gridcolor: 'rgba(255,255,255,0.1)' },
+                yaxis: { title: 'Urban %', gridcolor: 'rgba(255,255,255,0.1)' }
+            };
+            
+            Plotly.newPlot('urbanSprawlChart', [trace], layout, {responsive: true});
+        }
+
+        // Render agricultural chart
+        function renderAgriChart(data) {
+            const predictions = data.predictions;
+            
+            const trace1 = {
+                x: predictions.map(p => p.year),
+                y: predictions.map(p => p.soil_quality),
+                name: 'Soil Quality Index',
+                type: 'scatter',
+                mode: 'lines+markers',
+                line: { color: '#27ae60', width: 3 }
+            };
+            
+            const trace2 = {
+                x: predictions.map(p => p.year),
+                y: predictions.map(p => p.degradation_rate),
+                name: 'Degradation Rate %',
+                type: 'scatter',
+                mode: 'lines+markers',
+                line: { color: '#e74c3c', width: 3, dash: 'dash' },
+                yaxis: 'y2'
+            };
+            
+            const layout = {
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { color: '#fff' },
+                xaxis: { title: 'Year', gridcolor: 'rgba(255,255,255,0.1)' },
+                yaxis: { title: 'Soil Quality Index', gridcolor: 'rgba(255,255,255,0.1)', range: [0, 100] },
+                yaxis2: { title: 'Degradation %', overlaying: 'y', side: 'right', gridcolor: 'rgba(255,255,255,0.1)' },
+                showlegend: true,
+                legend: { x: 0, y: 1.1, orientation: 'h' }
+            };
+            
+            Plotly.newPlot('agriChart', [trace1, trace2], layout, {responsive: true});
+        }
+
+        // Update insights
+        function updateInsights(landUse, price, urban, agri) {
+            const insightsDiv = document.getElementById('insightsContent');
+            
+            const landUseChange = landUse.predictions[landUse.predictions.length - 1].urban_pct - landUse.current.urban_pct;
+            const priceChange = ((price.predictions[price.predictions.length - 1].predicted_price_rs_per_sqft - price.current_price) / price.current_price * 100).toFixed(1);
+            const agriSustainability = agri.predictions[0].agri_sustainability;
+
+            insightsDiv.innerHTML = `
+                <div class="insight-item">
+                    <span class="insight-icon">🏙️</span>
+                    <span>Urban area expected to ${landUseChange > 0 ? 'grow' : 'shrink'} by ${Math.abs(landUseChange).toFixed(1)}% over prediction period</span>
+                </div>
+                <div class="insight-item">
+                    <span class="insight-icon">💰</span>
+                    <span>Land prices projected to ${priceChange > 0 ? 'increase' : 'decrease'} by ${Math.abs(priceChange)}% by ${landUse.predictions[landUse.predictions.length - 1].year}</span>
+                </div>
+                <div class="insight-item">
+                    <span class="insight-icon">⚠️</span>
+                    <span>Recommendation: ${landUseChange > 5 ? 'Consider sustainable urban planning policies' : 'Monitor agricultural conversion rates'}</span>
+                </div>
+            `;
+        }
+
+        // Reset view
+        function resetView() {
+            currentDistrict = null;
+            document.getElementById('districtSelect').value = '';
+            document.getElementById('districtInfo').style.display = 'none';
+            map.setView([19.0, 75.0], 6);
+            
+            // Clear charts
+            ['landUseChart', 'priceChart', 'urbanSprawlChart', 'agriChart'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.innerHTML = '';
+            });
+
+            document.getElementById('insightsContent').innerHTML = `
+                <div class="insight-item">
+                    <span class="insight-icon">🤖</span>
+                    <span>Select a district to view personalized predictions and insights</span>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
